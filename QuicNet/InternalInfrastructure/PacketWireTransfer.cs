@@ -1,47 +1,38 @@
-﻿using QuicNet.Exceptions;
-using QuicNet.Infrastructure.Packets;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+using QuicNet.Exceptions;
+using QuicNet.Infrastructure.Packets;
 
 namespace QuicNet.InternalInfrastructure
 {
     internal class PacketWireTransfer
     {
-        private UdpClient _client;
-        private IPEndPoint _peerEndpoint;
+        private readonly UdpClient _client;
 
-        private Unpacker _unpacker;
+        private readonly Unpacker _unpacker;
+        private IPEndPoint _peerEndpoint;
 
         public PacketWireTransfer(UdpClient client, IPEndPoint peerEndpoint)
         {
             _client = client;
             _peerEndpoint = peerEndpoint;
-
             _unpacker = new Unpacker();
         }
 
         public Packet ReadPacket()
         {
             // Await response for sucessfull connection creation by the server
-            byte[] peerData = _client.Receive(ref _peerEndpoint);
+            var peerData = _client.Receive(ref _peerEndpoint);
             if (peerData == null)
                 throw new QuicConnectivityException("Server did not respond properly.");
 
-            Packet packet = _unpacker.Unpack(peerData);
-
-            return packet;
+            return _unpacker.Unpack(peerData);
         }
 
         public bool SendPacket(Packet packet)
         {
-            byte[] data = packet.Encode();
-
-            int sent = _client.Send(data, data.Length, _peerEndpoint);
+            var data = packet.Encode();
+            var sent = _client.Send(data, data.Length, _peerEndpoint);
 
             return sent > 0;
         }

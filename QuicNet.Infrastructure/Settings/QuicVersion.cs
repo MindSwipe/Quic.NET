@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace QuicNet.Infrastructure.Settings
 {
@@ -8,6 +6,6 @@ namespace QuicNet.Infrastructure.Settings
     {
         public const int CurrentVersion = 16;
 
-        public static readonly List<UInt32> SupportedVersions = new List<UInt32>() { 15, 16 };
+        public static readonly List<uint> SupportedVersions = new List<uint>() { 15, 16 };
     }
 }

@@ -8,16 +8,18 @@ namespace QuicNet.Infrastructure.PacketProcessing
     {
         public InitialPacket CreateInitialPacket(byte sourceConnectionId, byte destinationConnectionId)
         {
-            InitialPacket packet = new InitialPacket();
-            packet.PacketNumber = 0;
-            packet.SourceConnectionId = sourceConnectionId;
-            packet.DestinationConnectionId = destinationConnectionId;
-            packet.Version = QuicVersion.CurrentVersion;
+            var packet = new InitialPacket
+            {
+                PacketNumber = 0,
+                SourceConnectionId = sourceConnectionId,
+                DestinationConnectionId = destinationConnectionId,
+                Version = QuicVersion.CurrentVersion
+            };
 
-            int length = packet.Encode().Length;
-            int padding = QuicSettings.PMTU - length;
+            var length = packet.Encode().Length;
+            var padding = QuicSettings.PMTU - length;
 
-            for (int i = 0; i < padding; i++)
+            for (var i = 0; i < padding; i++)
                 packet.AttachFrame(new PaddingFrame());
 
             return packet;

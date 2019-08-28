@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace QuickNet.Utilities
+﻿namespace QuickNet.Utilities
 {
     public enum StreamType
     {
@@ -16,16 +10,16 @@ namespace QuickNet.Utilities
 
     public class StreamId
     {
-        public UInt64 Id { get; }
-        public UInt64 IntegerValue { get; }
-        public StreamType Type { get; private set; }
-
-        public StreamId(UInt64 id, StreamType type)
+        public StreamId(ulong id, StreamType type)
         {
             Id = id;
             Type = type;
-            IntegerValue = id << 2 | (UInt64)type;
+            IntegerValue = (id << 2) | (ulong) type;
         }
+
+        public ulong Id { get; }
+        public ulong IntegerValue { get; }
+        public StreamType Type { get; }
 
         public static implicit operator byte[](StreamId id)
         {
@@ -37,31 +31,25 @@ namespace QuickNet.Utilities
             return Decode(data);
         }
 
-        public static implicit operator UInt64(StreamId streamId)
+        public static implicit operator ulong(StreamId streamId)
         {
             return streamId.Id;
         }
 
-        public static byte[] Encode(UInt64 id, StreamType type)
+        public static byte[] Encode(ulong id, StreamType type)
         {
-            UInt64 identifier = id << 2 | (UInt64)type;
-
-            byte[] result = ByteUtilities.GetBytes(identifier);
-
-            return result;
+            var identifier = (id << 2) | (ulong) type;
+            return ByteUtilities.GetBytes(identifier);
         }
 
         public static StreamId Decode(byte[] data)
         {
-            StreamId result;
-            UInt64 id = ByteUtilities.ToUInt64(data);
-            UInt64 identifier = id >> 2;
-            UInt64 type = (UInt64)(0x03 & id);
-            StreamType streamType = (StreamType)type;
+            var id = ByteUtilities.ToUInt64(data);
+            var identifier = id >> 2;
+            var type = 0x03 & id;
+            var streamType = (StreamType) type;
 
-            result = new StreamId(identifier, streamType);
-
-            return result;
+            return new StreamId(identifier, streamType);
         }
     }
 }

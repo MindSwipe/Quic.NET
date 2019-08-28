@@ -1,9 +1,5 @@
 ﻿using QuickNet.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuicNet.Infrastructure.Frames
 {
@@ -20,7 +16,7 @@ namespace QuicNet.Infrastructure.Frames
 
         public override byte[] Encode()
         {
-            List<byte> result = new List<byte>();
+            var result = new List<byte>();
             byte[] maxData = MaximumData;
 
             result.Add(Type);

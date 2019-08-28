@@ -1,7 +1,4 @@
 ﻿using QuickNet.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace QuicNet.Infrastructure.Frames
 {

@@ -1,15 +1,14 @@
 ﻿using QuickNet.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuicNet.Infrastructure.Frames
 {
     public class MaxStreamsFrame : Frame
     {
+        private readonly StreamType _appliesTo;
+
         public override byte Type => 0x12;
+
         public VariableInteger MaximumStreams { get; set; }
 
         public MaxStreamsFrame()
@@ -17,22 +16,21 @@ namespace QuicNet.Infrastructure.Frames
 
         }
 
-        public MaxStreamsFrame(UInt64 maximumStreamId, StreamType appliesTo)
+        public MaxStreamsFrame(ulong maximumStreamId, StreamType appliesTo)
         {
+            _appliesTo = appliesTo;
             MaximumStreams = new VariableInteger(maximumStreamId);
         }
 
         public override void Decode(ByteArray array)
         {
-            byte type = array.ReadByte();
+            var type = array.ReadByte();
             MaximumStreams = array.ReadVariableInteger();
         }
 
         public override byte[] Encode()
         {
-            List<byte> result = new List<byte>();
-            result.Add(Type);
-
+            var result = new List<byte> {Type};
             byte[] streamId = MaximumStreams;
             result.AddRange(streamId);
 

@@ -2,9 +2,7 @@
 using QuicNet.Infrastructure.Exceptions;
 using QuicNet.Infrastructure.Frames;
 using QuicNet.Infrastructure.Settings;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace QuicNet.Infrastructure.Packets
 {
@@ -13,34 +11,35 @@ namespace QuicNet.Infrastructure.Packets
     /// </summary>
     public abstract class Packet
     {
-        protected List<Frame> _frames = new List<Frame>();
+        protected List<Frame> Frames = new List<Frame>();
         public abstract byte Type { get; }
 
-        public UInt32 Version { get; set; }
+        public uint Version { get; set; }
 
         public abstract byte[] Encode();
+
         public abstract void Decode(byte[] packet);
 
         public virtual void AttachFrame(Frame frame)
         {
-            _frames.Add(frame);
+            Frames.Add(frame);
         }
 
         public virtual List<Frame> GetFrames()
         {
-            return _frames;
+            return Frames;
         }
 
         public virtual void DecodeFrames(ByteArray array)
         {
-            FrameParser factory = new FrameParser(array);
+            var factory = new FrameParser(array);
             Frame result;
-            int frames = 0;
+            var frames = 0;
             while (array.HasData() && frames <= QuicSettings.PMTU)
             {
                 result = factory.GetFrame();
                 if (result != null)
-                    _frames.Add(result);
+                    Frames.Add(result);
 
                 frames++;
 
@@ -53,8 +52,8 @@ namespace QuicNet.Infrastructure.Packets
 
         public virtual byte[] EncodeFrames()
         {
-            List<byte> result = new List<byte>();
-            foreach (Frame frame in _frames)
+            var result = new List<byte>();
+            foreach (var frame in Frames)
             {
                 result.AddRange(frame.Encode());
             }

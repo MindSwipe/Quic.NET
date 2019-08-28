@@ -1,66 +1,60 @@
-﻿using QuicNet.Context;
+﻿using System.Collections.Generic;
 using QuicNet.Infrastructure;
 using QuicNet.Infrastructure.Settings;
 using QuicNet.InternalInfrastructure;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace QuicNet.Connections
 {
     /// <summary>
-    /// Since UDP is a stateless protocol, the ConnectionPool is used as a Conenction Manager to 
-    /// route packets to the right "Connection".
+    ///     Since UDP is a stateless protocol, the ConnectionPool is used as a Conenction Manager to
+    ///     route packets to the right "Connection".
     /// </summary>
     internal static class ConnectionPool
     {
         /// <summary>
-        /// Starting point for connection identifiers.
-        /// ConnectionId's are incremented sequentially by 1.
+        ///     Starting point for connection identifiers.
+        ///     ConnectionId's are incremented sequentially by 1.
         /// </summary>
-        private static NumberSpace _ns = new NumberSpace(QuicSettings.MaximumConnectionIds);
+        private static readonly NumberSpace Ns = new NumberSpace(QuicSettings.MaximumConnectionIds);
 
-        private static Dictionary<UInt32, QuicConnection> _pool = new Dictionary<UInt32, QuicConnection>();
-
-        private static List<QuicConnection> _draining = new List<QuicConnection>();
+        private static readonly Dictionary<uint, QuicConnection> Pool = new Dictionary<uint, QuicConnection>();
 
         /// <summary>
-        /// Adds a connection to the connection pool.
-        /// For now assume that the client connection id is valid, and just send it back.
-        /// Later this should change in a way that the server validates, and regenerates a connection Id.
+        ///     Adds a connection to the connection pool.
+        ///     For now assume that the client connection id is valid, and just send it back.
+        ///     Later this should change in a way that the server validates, and regenerates a connection Id.
         /// </summary>
-        /// <param name="id">Connection Id</param>
+        /// <param name="connection">ConnectionData object to read values from</param>
+        /// <param name="availableConnectionId">The ConnectionId available</param>
         /// <returns></returns>
-        public static bool AddConnection(ConnectionData connection, out UInt32 availableConnectionId)
+        public static bool AddConnection(ConnectionData connection, out uint availableConnectionId)
         {
             availableConnectionId = 0;
 
-            if (_pool.ContainsKey(connection.ConnectionId))
+            if (Pool.ContainsKey(connection.ConnectionId))
+                return false;
+            if (Pool.Count > QuicSettings.MaximumConnectionIds)
                 return false;
 
-            if (_pool.Count > QuicSettings.MaximumConnectionIds)
-                return false;
-
-            availableConnectionId = _ns.Get();
-
+            availableConnectionId = Ns.Get();
             connection.PeerConnectionId = connection.ConnectionId;
-            _pool.Add(availableConnectionId, new QuicConnection(connection));
+            Pool.Add(availableConnectionId, new QuicConnection(connection));
 
             return true;
         }
 
-        public static void RemoveConnection(UInt32 id)
+        public static void RemoveConnection(uint id)
         {
-            if (_pool.ContainsKey(id))
-                _pool.Remove(id);
+            if (Pool.ContainsKey(id))
+                Pool.Remove(id);
         }
 
-        public static QuicConnection Find(UInt32 id)
+        public static QuicConnection Find(uint id)
         {
-            if (_pool.ContainsKey(id) == false)
+            if (Pool.ContainsKey(id) == false)
                 return null;
 
-            return _pool[id];
+            return Pool[id];
         }
     }
 }

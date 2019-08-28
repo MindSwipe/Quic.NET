@@ -1,9 +1,5 @@
 ﻿using QuickNet.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuicNet.Infrastructure.Frames
 {
@@ -13,14 +9,12 @@ namespace QuicNet.Infrastructure.Frames
 
         public override void Decode(ByteArray array)
         {
-            byte type = array.ReadByte();
+            array.ReadByte();
         }
 
         public override byte[] Encode()
         {
-            List<byte> data = new List<byte>();
-            data.Add(Type);
-
+            var data = new List<byte> {Type};
             return data.ToArray();
         }
     }

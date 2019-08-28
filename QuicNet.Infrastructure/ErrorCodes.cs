@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace QuicNet.Infrastructure
+﻿namespace QuicNet.Infrastructure
 {
-    public enum ErrorCode : UInt16
+    public enum ErrorCode : ushort
     {
         NO_ERROR = 0x0,
         INTERNAL_ERROR = 0x1,

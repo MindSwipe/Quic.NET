@@ -1,39 +1,39 @@
-﻿using QuickNet.Utilities;
-using QuicNet.Context;
+﻿using System;
+using System.Collections.Generic;
+using QuickNet.Utilities;
 using QuicNet.Exceptions;
+using QuicNet.Infrastructure;
 using QuicNet.Infrastructure.Frames;
 using QuicNet.Infrastructure.PacketProcessing;
 using QuicNet.Infrastructure.Packets;
 using QuicNet.Infrastructure.Settings;
 using QuicNet.InternalInfrastructure;
 using QuicNet.Streams;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
 
 namespace QuicNet.Connections
 {
     public class QuicConnection
     {
-        private UInt64 _currentTransferRate;
-        private ConnectionState _state;
+        private readonly PacketWireTransfer _pwt;
+        private readonly Dictionary<ulong, QuicStream> _streams;
+        private ulong _currentTransferRate;
         private string _lastError;
-        private Dictionary<UInt64, QuicStream> _streams;
+        private ConnectionState _state;
 
-        private PacketWireTransfer _pwt;
+        public uint ConnectionId { get; }
 
-        public UInt32 ConnectionId { get; private set; }
-        public UInt32 PeerConnectionId { get; private set; }
+        public uint PeerConnectionId { get; }
 
-        public PacketCreator PacketCreator { get; private set; }
-        public UInt64 MaxData { get; private set; }
-        public UInt64 MaxStreams { get; private set; }
+        public PacketCreator PacketCreator { get; }
+
+        public ulong MaxData { get; private set; }
+
+        public ulong MaxStreams { get; private set; }
 
         public event Action<QuicStream> OnDataReceived;
 
         /// <summary>
-        /// Creates a new stream for sending/receiving data.
+        ///     Creates a new stream for sending/receiving data.
         /// </summary>
         /// <param name="type">Type of the stream (Uni-Bidirectional)</param>
         /// <returns>A new stream instance or Null if the connection is terminated.</returns>
@@ -42,7 +42,7 @@ namespace QuicNet.Connections
             if (_state != ConnectionState.Open)
                 return null;
 
-            QuicStream stream = new QuicStream(this, new QuickNet.Utilities.StreamId(0, type));
+            var stream = new QuicStream(this, new StreamId(0, type));
             _streams.Add(0, stream);
 
             return stream;
@@ -50,7 +50,7 @@ namespace QuicNet.Connections
 
         public void ProcessFrames(List<Frame> frames)
         {
-            foreach (Frame frame in frames)
+            foreach (var frame in frames)
             {
                 if (frame.Type == 0x01)
                     OnRstStreamFrame(frame);
@@ -73,7 +73,7 @@ namespace QuicNet.Connections
 
         public void IncrementRate(int length)
         {
-            _currentTransferRate += (UInt32)length;
+            _currentTransferRate += (uint) length;
         }
 
         public bool MaximumReached()
@@ -86,18 +86,18 @@ namespace QuicNet.Connections
 
         private void OnConnectionCloseFrame(Frame frame)
         {
-            ConnectionCloseFrame ccf = (ConnectionCloseFrame)frame;
+            var ccf = (ConnectionCloseFrame) frame;
             _state = ConnectionState.Draining;
             _lastError = ccf.ReasonPhrase;
         }
 
         private void OnRstStreamFrame(Frame frame)
         {
-            ResetStreamFrame rsf = (ResetStreamFrame)frame;
+            var rsf = (ResetStreamFrame) frame;
             if (_streams.ContainsKey(rsf.StreamId))
             {
                 // Find and reset the stream
-                QuicStream stream = _streams[rsf.StreamId];
+                var stream = _streams[rsf.StreamId];
                 stream.ResetStream(rsf);
 
                 // Remove the stream from the connection
@@ -107,101 +107,89 @@ namespace QuicNet.Connections
 
         private void OnStreamFrame(Frame frame)
         {
-            StreamFrame sf = (StreamFrame)frame;
+            var sf = (StreamFrame) frame;
             if (_streams.ContainsKey(sf.ConvertedStreamId.Id) == false)
             {
-                QuicStream stream = new QuicStream(this, sf.ConvertedStreamId);
+                var stream = new QuicStream(this, sf.ConvertedStreamId);
                 stream.ProcessData(sf);
 
-                if ((UInt64)_streams.Count < MaxStreams)
+                if ((ulong) _streams.Count < MaxStreams)
                     _streams.Add(sf.StreamId.Value, stream);
                 else
                     SendMaximumStreamReachedError();
             }
             else
             {
-                QuicStream stream = _streams[sf.StreamId];
+                var stream = _streams[sf.StreamId];
                 stream.ProcessData(sf);
             }
         }
 
         private void OnMaxDataFrame(Frame frame)
         {
-            MaxDataFrame sf = (MaxDataFrame)frame;
+            var sf = (MaxDataFrame) frame;
             if (sf.MaximumData.Value > MaxData)
                 MaxData = sf.MaximumData.Value;
         }
 
         private void OnMaxStreamDataFrame(Frame frame)
         {
-            MaxStreamDataFrame msdf = (MaxStreamDataFrame)frame;
+            var msdf = (MaxStreamDataFrame) frame;
             if (_streams.ContainsKey(msdf.StreamId))
             {
                 // Find and set the new maximum stream data on the stream
-                QuicStream stream = _streams[msdf.ConvertedStreamId.Id];
+                var stream = _streams[msdf.ConvertedStreamId.Id];
                 stream.SetMaximumStreamData(msdf.MaximumStreamData.Value);
             }
         }
 
         private void OnMaxStreamFrame(Frame frame)
         {
-            MaxStreamsFrame msf = (MaxStreamsFrame)frame;
+            var msf = (MaxStreamsFrame) frame;
             if (msf.MaximumStreams > MaxStreams)
                 MaxStreams = msf.MaximumStreams.Value;
         }
 
+        // ReSharper disable once UnusedParameter.Local
+        // See comment below
         private void OnDataBlockedFrame(Frame frame)
         {
             // TODO: Tuning of data transfer.
+
             // Since no stream id is present on this frame, we should be
             // stopping the connection.
-
             TerminateConnection();
         }
 
-        private void OnStreamDataBlockedFrame(Frame frame)
-        {
-            StreamDataBlockedFrame sdbf = (StreamDataBlockedFrame)frame;
-
-            if (_streams.ContainsKey(sdbf.ConvertedStreamId.Id) == false)
-                return;
-            QuicStream stream = _streams[sdbf.ConvertedStreamId.Id];
-
-            stream.ProcessStreamDataBlocked(sdbf);
-
-            // Remove the stream from the connection
-            _streams.Remove(sdbf.ConvertedStreamId.Id);
-        }
-
         #region Internal
-  
+
         internal QuicConnection(ConnectionData connection)
         {
             _currentTransferRate = 0;
             _state = ConnectionState.Open;
             _lastError = string.Empty;
-            _streams = new Dictionary<UInt64, QuicStream>();
-            _pwt = connection.PWT;
+            _streams = new Dictionary<ulong, QuicStream>();
+            _pwt = connection.Pwt;
 
             ConnectionId = connection.ConnectionId;
             PeerConnectionId = connection.PeerConnectionId;
             // Also creates a new number space
-            PacketCreator = new PacketCreator(ConnectionId, PeerConnectionId);
+            PacketCreator = new PacketCreator(PeerConnectionId);
             MaxData = QuicSettings.MaxData;
             MaxStreams = QuicSettings.MaximumStreamId;
         }
 
         /// <summary>
-        /// Client only!
+        ///     Client only!
         /// </summary>
         /// <returns></returns>
         internal void ReceivePacket()
         {
-            Packet packet = _pwt.ReadPacket();
+            var packet = _pwt.ReadPacket();
 
             if (packet is ShortHeaderPacket)
             {
-                ShortHeaderPacket shp = (ShortHeaderPacket)packet;
+                var shp = (ShortHeaderPacket) packet;
                 ProcessFrames(shp.GetFrames());
             }
 
@@ -215,7 +203,6 @@ namespace QuicNet.Connections
 
                 throw new QuicConnectivityException(_lastError);
             }
-
         }
 
         internal bool SendData(Packet packet)
@@ -233,24 +220,25 @@ namespace QuicNet.Connections
             _state = ConnectionState.Draining;
             _streams.Clear();
 
-            ConnectionPool.RemoveConnection(this.ConnectionId);
+            ConnectionPool.RemoveConnection(ConnectionId);
         }
 
         internal void SendMaximumStreamReachedError()
         {
-            ShortHeaderPacket packet = PacketCreator.CreateConnectionClosePacket(Infrastructure.ErrorCode.STREAM_LIMIT_ERROR, "Maximum number of streams reached.");
+            var packet = PacketCreator.CreateConnectionClosePacket(ErrorCode.STREAM_LIMIT_ERROR,
+                "Maximum number of streams reached.");
             Send(packet);
         }
 
         /// <summary>
-        /// Used to send protocol packets to the peer.
+        ///     Used to send protocol packets to the peer.
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
         internal bool Send(Packet packet)
         {
             // Encode the packet
-            byte[] data = packet.Encode();
+            var data = packet.Encode();
 
             // Increment the connection transfer rate
             IncrementRate(data.Length);
@@ -258,16 +246,17 @@ namespace QuicNet.Connections
             // If the maximum transfer rate is reached, send FLOW_CONTROL_ERROR
             if (MaximumReached())
             {
-                packet = PacketCreator.CreateConnectionClosePacket(Infrastructure.ErrorCode.FLOW_CONTROL_ERROR, "Maximum data transfer reached.");
+                packet = PacketCreator.CreateConnectionClosePacket(ErrorCode.FLOW_CONTROL_ERROR,
+                    "Maximum data transfer reached.");
 
                 TerminateConnection();
             }
 
             // Ignore empty packets
-            if (data == null || data.Length <= 0)
+            if (data.Length <= 0)
                 return true;
 
-            bool result = _pwt.SendPacket(packet);
+            var result = _pwt.SendPacket(packet);
 
             return result;
         }

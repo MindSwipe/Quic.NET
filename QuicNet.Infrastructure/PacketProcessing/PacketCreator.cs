@@ -1,46 +1,39 @@
-﻿using QuickNet.Utilities;
-using QuicNet.Infrastructure.Frames;
+﻿using QuicNet.Infrastructure.Frames;
 using QuicNet.Infrastructure.Packets;
-using QuicNet.Infrastructure.Settings;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuicNet.Infrastructure.PacketProcessing
 {
     public class PacketCreator
     {
-        private NumberSpace _ns;
-        private UInt32 _connectionId;
-        private UInt32 _peerConnectionId;
+        private readonly NumberSpace _ns;
 
-        public PacketCreator(UInt32 connectionId, UInt32 peerConnectionId)
+        private readonly uint _peerConnectionId;
+
+        public PacketCreator(uint peerConnectionId)
         {
             _ns = new NumberSpace();
-
-            _connectionId = connectionId;
             _peerConnectionId = peerConnectionId;
         }
 
         public ShortHeaderPacket CreateConnectionClosePacket(ErrorCode code, string reason)
         {
-            ShortHeaderPacket packet = new ShortHeaderPacket();
-            packet.PacketNumber = _ns.Get();
-            packet.DestinationConnectionId = (byte)_peerConnectionId;
-            packet.AttachFrame(new ConnectionCloseFrame(code, reason));
+            var packet = new ShortHeaderPacket
+            {
+                PacketNumber = _ns.Get(), DestinationConnectionId = (byte) _peerConnectionId
+            };
 
+            packet.AttachFrame(new ConnectionCloseFrame(code, reason));
             return packet;
         }
 
-        public ShortHeaderPacket CreateDataPacket(UInt64 streamId, byte[] data)
+        public ShortHeaderPacket CreateDataPacket(ulong streamId, byte[] data)
         {
-            ShortHeaderPacket packet = new ShortHeaderPacket();
-            packet.PacketNumber = _ns.Get();
-            packet.DestinationConnectionId = (byte)_peerConnectionId;
-            packet.AttachFrame(new StreamFrame(streamId, data, 0, true));
+            var packet = new ShortHeaderPacket
+            {
+                PacketNumber = _ns.Get(), DestinationConnectionId = (byte) _peerConnectionId
+            };
 
+            packet.AttachFrame(new StreamFrame(streamId, data, 0, true));
             return packet;
         }
 

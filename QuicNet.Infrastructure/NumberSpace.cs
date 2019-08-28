@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace QuicNet.Infrastructure
+﻿namespace QuicNet.Infrastructure
 {
     public class NumberSpace
     {
-        private UInt32 _max = UInt32.MaxValue;
-        private UInt32 _n = 0;
+        private readonly uint _max = uint.MaxValue;
+
+        private uint _n;
 
         public NumberSpace()
         {
         }
 
-        public NumberSpace(UInt32 max)
+        public NumberSpace(uint max)
         {
             _max = max;
         }
@@ -25,7 +20,7 @@ namespace QuicNet.Infrastructure
             return _n == _max;
         }
 
-        public UInt32 Get()
+        public uint Get()
         {
             if (_n >= _max)
                 return 0;

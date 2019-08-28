@@ -1,36 +1,24 @@
-﻿using QuicNet.Infrastructure.Frames;
-using QuicNet.Infrastructure.Packets;
-using QuicNet.Streams;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using QuicNet.Streams;
 
 namespace QuicNet.Context
 {
     /// <summary>
-    /// Wrapper to represent the stream.
+    ///     Wrapper to represent the stream.
     /// </summary>
     public class QuicStreamContext
     {
         /// <summary>
-        /// The connection's context.
-        /// </summary>
-        // public QuicContext ConnectionContext { get; set; }
-
-        /// <summary>
-        /// Data received
+        ///     Data received
         /// </summary>
         public byte[] Data { get; private set; }
 
         /// <summary>
-        /// Unique stream identifier
+        ///     Unique stream identifier
         /// </summary>
-        public UInt64 StreamId { get; private set; }
+        public ulong StreamId { get; }
 
         /// <summary>
-        /// Send data to the client.
+        ///     Send data to the client.
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -42,12 +30,6 @@ namespace QuicNet.Context
             // Ignore empty packets
             if (data == null || data.Length <= 0)
                 return true;
-
-            // Packet packet = ConnectionContext.Connection.PacketCreator.CreateDataPacket(StreamId, data);
-
-            // bool result = ConnectionContext.Send(packet);
-
-            //return result;
 
             return false;
         }
@@ -63,10 +45,9 @@ namespace QuicNet.Context
         internal QuicStream Stream { get; set; }
 
         /// <summary>
-        /// Internal constructor to prevent creating the context outside the scope of Quic.
+        ///     Internal constructor to prevent creating the context outside the scope of Quic.
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="streamId"></param>
+        /// <param name="stream">The stream to set</param>
         internal QuicStreamContext(QuicStream stream)
         {
             Stream = stream;

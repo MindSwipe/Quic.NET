@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace QuicNet.Infrastructure.Packets
+﻿namespace QuicNet.Infrastructure.Packets
 {
     public class Unpacker
     {
@@ -12,7 +6,7 @@ namespace QuicNet.Infrastructure.Packets
         {
             Packet result = null;
 
-            QuicPacketType type = GetPacketType(data);
+            var type = GetPacketType(data);
             switch(type)
             {
                 case QuicPacketType.Initial: result = new InitialPacket(); break;
@@ -32,7 +26,7 @@ namespace QuicNet.Infrastructure.Packets
             if (data == null || data.Length <= 0)
                 return QuicPacketType.Broken;
 
-            byte type = data[0];
+            var type = data[0];
 
             if ((type & 0xC0) == 0xC0)
                 return QuicPacketType.Initial;

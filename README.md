@@ -13,7 +13,10 @@
     </a>
     <img src="https://img.shields.io/badge/version-0.2.0 alpha-green.svg">
 </p>
-<h1 align="center"> QuicNet
+<h1 align="center"> QuicNet </h1>
+
+# Preamble
+This is a fork, not the original. The purpose of this fork was to port the Libraries from .NET Framework 4.5.2 (and multiple other versions) to .NET Standard 2.0 to allow interoperability with .NET Framework and .NET Core. The Unit Test project and the Console test projects are still .NET Framework, although they are .NET Framework 4.7.2 now. I also updated the .csproj files from their old VS 2015 format to the new VS 2017 and upwards format. I may or may not continue developing this, I just got it into a state where I can work with it and can start experimenting to see if it fits my needs or not.
 
 # Table of contents
    - [What is QuicNet](#what-is-quicnet)
